@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Factorización aplicada · Ingeniería en Seguridad y Salud en el Trabajo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0b2340;
+    --bg-deep:#081a30;
+    --grid-line:rgba(148,197,255,.14);
+    --grid-line-strong:rgba(148,197,255,.28);
+    --yellow:#ffc72c;
+    --yellow-dark:#caa020;
+    --yellow-light:#ffd968;
+    --paper:#edf1e6;
+    --ink:#0b2340;
+    --cyan:#8ecbff;
+    --red:#ff6b4a;
+    --green:#5ac98f;
+    --muted:#9db6d8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/40px 40px,
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/40px 40px,
+      radial-gradient(circle at 15% 10%, var(--bg) 0%, var(--bg-deep) 70%);
+    background-color:var(--bg);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:24px 24px 120px;
+  }
+  h1,h2,h3,.mono{font-family:'JetBrains Mono',monospace;}
+  ::selection{background:var(--yellow);color:var(--ink);}
+
+  /* ---------- header ---------- */
+  .topbar{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    border-bottom:2px solid var(--grid-line-strong);
+    padding-bottom:14px;margin-bottom:28px;flex-wrap:wrap;gap:10px;
+  }
+  .topbar .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--yellow);text-transform:uppercase;}
+  .topbar h1{font-size:20px;margin:4px 0 0;color:var(--paper);letter-spacing:.01em;}
+  .topbar .sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .badge{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink);
+    background:var(--yellow);padding:5px 10px;border-radius:2px;font-weight:700;
+    letter-spacing:.04em;white-space:nowrap;
+  }
+
+  .stage{max-width:920px;margin:0 auto;}
+  .screen{display:none;animation:fadeUp .5s ease;}
+  .screen.active{display:block;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+  .panel{
+    background:rgba(237,241,230,.04);
+    border:1px solid var(--grid-line-strong);
+    border-radius:4px;
+    padding:28px 30px;
+    position:relative;
+  }
+  .panel::before{
+    content:'';position:absolute;top:0;left:0;width:22px;height:22px;
+    border-top:2px solid var(--yellow);border-left:2px solid var(--yellow);
+  }
+  .panel::after{
+    content:'';position:absolute;bottom:0;right:0;width:22px;height:22px;
+    border-bottom:2px solid var(--yellow);border-right:2px solid var(--yellow);
+  }
+
+  label{display:block;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--cyan);text-transform:uppercase;margin-bottom:8px;}
+  input[type=text]{
+    width:100%;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:16px;
+    background:var(--paper);color:var(--ink);border:none;border-radius:2px;outline:none;
+    border:2px solid transparent;
+  }
+  input[type=text]:focus{border-color:var(--yellow);}
+
+  button{
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;letter-spacing:.04em;
+    cursor:pointer;border:none;border-radius:2px;padding:13px 22px;transition:transform .12s ease, filter .12s ease;
+  }
+  button:active{transform:translateY(1px) scale(.98);}
+  button:focus-visible{outline:3px solid var(--cyan);outline-offset:2px;}
+  .btn-primary{background:var(--yellow);color:var(--ink);}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-ghost{background:transparent;color:var(--paper);border:1px solid var(--grid-line-strong);}
+  .btn-ghost:hover{border-color:var(--cyan);color:var(--cyan);}
+  .btn-audio{
+    background:transparent;border:1px solid var(--yellow-dark);color:var(--yellow);
+    font-size:12px;padding:9px 14px;display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn-audio:hover{background:rgba(255,199,44,.1);}
+  .btn-audio.alt{border-color:var(--cyan);color:var(--cyan);}
+  .btn-audio.alt:hover{background:rgba(142,203,255,.1);}
+
+  /* ---------- teclado de potencias ---------- */
+  .exp-toolbar{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 4px;
+  }
+  .exp-toolbar .exp-label{
+    font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--muted);
+    letter-spacing:.06em;text-transform:uppercase;margin-right:2px;
+  }
+  .btn-chip{
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;
+    background:rgba(142,203,255,.08);color:var(--cyan);
+    border:1px solid rgba(142,203,255,.35);border-radius:20px;
+    padding:6px 13px;cursor:pointer;transition:background .12s ease,transform .12s ease;
+  }
+  .btn-chip:hover{background:rgba(142,203,255,.18);}
+  .btn-chip:active{transform:scale(.95);}
+  .input-hint{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5;}
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:18px;}
+
+  /* ---------- welcome ---------- */
+  .welcome-hero{text-align:center;padding:10px 0 6px;}
+  .welcome-hero h2{font-size:clamp(26px,4vw,38px);margin:0 0 6px;line-height:1.15;}
+  .welcome-hero .accent{color:var(--yellow);}
+  .welcome-hero p{color:var(--muted);max-width:560px;margin:0 auto 30px;font-size:15px;line-height:1.6;}
+
+  /* ---------- intro ---------- */
+  .chain{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;margin:26px 0 8px;}
+  .chain .op{font-family:'JetBrains Mono',monospace;color:var(--muted);font-size:20px;}
+  .step-label{font-family:'JetBrains Mono',monospace;color:var(--cyan);font-size:13px;text-align:center;margin-top:6px;}
+
+  /* ---------- 3D crates ---------- */
+  .scene3d{perspective:700px;}
+  .crate3d{
+    position:relative;width:112px;height:70px;transform-style:preserve-3d;
+    transform:rotateX(-18deg) rotateY(-32deg);
+    animation:rock 5s ease-in-out infinite alternate;
+  }
+  @keyframes rock{
+    0%{transform:rotateX(-18deg) rotateY(-32deg);}
+    100%{transform:rotateX(-12deg) rotateY(-8deg);}
+  }
+  .crate3d.small{width:52px;height:40px;}
+  .crate3d .f{position:absolute;display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--ink);border:1px solid rgba(11,35,64,.15);
+    text-align:center;line-height:1.15;padding:2px;white-space:normal;}
+  .crate3d .f-front{width:112px;height:70px;background:var(--yellow);transform:translateZ(30px);font-size:12.5px;}
+  .crate3d .f-back{width:112px;height:70px;background:var(--yellow-dark);transform:translateZ(-30px) rotateY(180deg);}
+  .crate3d .f-right{width:60px;height:70px;left:26px;background:var(--yellow-dark);transform:rotateY(90deg) translateZ(56px);}
+  .crate3d .f-left{width:60px;height:70px;left:26px;background:var(--yellow-dark);transform:rotateY(-90deg) translateZ(56px);}
+  .crate3d .f-top{width:112px;height:60px;top:5px;background:var(--yellow-light);transform:rotateX(90deg) translateZ(35px);}
+  .crate3d .f-bottom{width:112px;height:60px;top:5px;background:var(--yellow-dark);transform:rotateX(-90deg) translateZ(35px);}
+
+  .crate3d.small .f-front{width:52px;height:40px;transform:translateZ(17px);font-size:10px;}
+  .crate3d.small .f-back{width:52px;height:40px;transform:translateZ(-17px) rotateY(180deg);}
+  .crate3d.small .f-right{width:34px;height:40px;left:9px;transform:rotateY(90deg) translateZ(26px);}
+  .crate3d.small .f-left{width:34px;height:40px;left:9px;transform:rotateY(-90deg) translateZ(26px);}
+  .crate3d.small .f-top{width:52px;height:34px;top:3px;transform:rotateX(90deg) translateZ(20px);}
+  .crate3d.small .f-bottom{width:52px;height:34px;top:3px;transform:rotateX(-90deg) translateZ(20px);}
+
+  .crate3d.result .f-front,.crate3d.result .f-back{background:#33465e;color:var(--paper);}
+  .crate3d.result .f-right,.crate3d.result .f-left{background:#243448;}
+  .crate3d.result .f-top,.crate3d.result .f-bottom{background:#3c5372;}
+  .crate3d.result.revealed .f-front,.crate3d.result.revealed .f-back{background:var(--green);color:var(--ink);}
+  .crate3d.result.revealed .f-right,.crate3d.result.revealed .f-left{background:#3d8f66;}
+  .crate3d.result.revealed .f-top,.crate3d.result.revealed .f-bottom{background:#79dba4;}
+
+  .crate-pair{display:flex;align-items:center;justify-content:center;gap:22px;flex-wrap:wrap;margin:24px 0;padding:18px 0;}
+
+  /* ---------- exercise ---------- */
+  .progress-track{height:6px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-bottom:22px;}
+  .progress-fill{height:100%;background:var(--yellow);transition:width .4s ease;}
+  .sheet-tag{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--yellow);letter-spacing:.12em;margin-bottom:6px;}
+  .context-text{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:16px;}
+  .statement-box{
+    background:var(--paper);color:var(--ink);font-family:'JetBrains Mono',monospace;
+    font-size:clamp(20px,3.4vw,28px);font-weight:700;padding:18px 22px;border-radius:3px;
+    display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:16px;
+  }
+  .feedback{margin-top:16px;padding:14px 16px;border-radius:3px;font-size:14px;line-height:1.6;display:none;}
+  .feedback.show{display:block;}
+  .feedback.ok{background:rgba(90,201,143,.12);border:1px solid var(--green);color:#c5f3da;}
+  .feedback.bad{background:rgba(255,107,74,.12);border:1px solid var(--red);color:#ffd2c4;}
+  .explanation{margin-top:14px;padding:16px;background:rgba(142,203,255,.06);border-left:3px solid var(--cyan);border-radius:2px;font-size:13.5px;line-height:1.65;color:#dbe9fb;display:none;}
+  .explanation.show{display:block;}
+
+  /* ---------- summary ---------- */
+  .summary-item{border-bottom:1px solid var(--grid-line);padding:14px 0;}
+  .summary-item:last-child{border-bottom:none;}
+  .summary-head{display:flex;justify-content:space-between;gap:12px;font-family:'JetBrains Mono',monospace;font-size:13px;}
+  .summary-head .mark{font-weight:800;}
+  .summary-head .mark.ok{color:var(--green);}
+  .summary-head .mark.bad{color:var(--red);}
+  .score-hero{text-align:center;padding:6px 0 22px;}
+  .score-hero .num{font-family:'JetBrains Mono',monospace;font-size:56px;font-weight:800;color:var(--yellow);}
+  .score-hero .lbl{color:var(--muted);font-size:13px;letter-spacing:.08em;text-transform:uppercase;}
+
+  /* ---------- title block (engineering drawing style) ---------- */
+  .titleblock{
+    position:fixed;bottom:0;left:0;right:0;
+    background:var(--bg-deep);border-top:2px solid var(--yellow);
+    display:flex;justify-content:center;gap:0;flex-wrap:wrap;
+    font-family:'JetBrains Mono',monospace;font-size:11px;z-index:20;
+  }
+  .titleblock .cell{padding:8px 18px;border-right:1px solid var(--grid-line-strong);color:var(--muted);}
+  .titleblock .cell b{display:block;color:var(--paper);font-size:12px;margin-top:2px;}
+  .titleblock .cell:last-child{border-right:none;}
+
+  @media(max-width:640px){
+    body{padding:16px 14px 130px;}
+    .panel{padding:20px 16px;}
+    .titleblock{font-size:10px;}
+    .titleblock .cell{padding:7px 10px;}
+  }
+  .cover{text-align:center;border-bottom:1px solid var(--grid-line-strong);padding-bottom:22px;margin-bottom:22px;}
+  .cover-uni{font-family:'JetBrains Mono',monospace;font-size:clamp(20px,3.6vw,30px);font-weight:800;color:var(--yellow);letter-spacing:.08em;}
+  .cover-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:18px;text-align:left;}
+  .cover-grid div{background:rgba(237,241,230,.05);border-left:3px solid var(--yellow);padding:10px 14px;}
+  .cover-grid span{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:var(--cyan);text-transform:uppercase;}
+  .cover-grid b{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--paper);}
+  .greet{display:none;margin-top:14px;padding:12px 16px;background:rgba(90,201,143,.12);border:1px solid var(--green);color:#c5f3da;font-family:'JetBrains Mono',monospace;font-size:14px;}
+  .greet.show{display:block;}
+  .audio-pair{display:inline-flex;gap:6px;flex-wrap:wrap;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="eyebrow">Universidad Americana</div>
+    <h1>Factorización aplicada</h1>
+    <div class="sub">Ingeniería en Seguridad y Salud en el Trabajo — Competencias Matemáticas · Semana 5</div>
+  </div>
+  <div class="badge" id="statusBadge">LÁMINA 00/15</div>
+</div>
+
+<div class="stage">
+
+  <!-- ============ PANTALLA 0: BIENVENIDA ============ -->
+  <section id="screen-welcome" class="screen active">
+    <div class="panel">
+      <div class="cover">
+        <div class="cover-uni">UNIVERSIDAD AMERICANA</div>
+        <div class="cover-grid">
+          <div><span>Docente</span><b>NICOLAS BILBAO</b></div>
+          <div><span>Materia</span><b>COMPETENCIAS MATEMÁTICAS</b></div>
+          <div><span>Semana</span><b>5</b></div>
+          <div><span>Programa</span><b>INGENIERÍA EN SEGURIDAD Y SALUD EN EL TRABAJO</b></div>
+        </div>
+      </div>
+      <div class="welcome-hero">
+        <h2>Descomponiendo <span class="accent">estructuras</span>,<br>igual que en la ingeniería.</h2>
+        <p>Así como un ingeniero de seguridad descompone un proceso en sus factores de riesgo, en álgebra <b>factorizar</b> significa descomponer una expresión en el producto de sus partes más simples. Resuelve 15 ejercicios aplicados a contextos de seguridad y salud en el trabajo.</p>
+      </div>
+      <label for="studentName">Nombre completo del estudiante</label>
+      <input type="text" id="studentName" placeholder="Escribe tu nombre y apellido" autocomplete="off">
+      <div class="greet" id="greetBox"></div>
+      <div class="row">
+        <button class="btn-primary" id="startBtn">Comenzar actividad →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA 1: INTRO / TEORÍA ============ -->
+  <section id="screen-intro" class="screen">
+    <div class="panel">
+      <div class="sheet-tag">CONCEPTO CLAVE</div>
+      <h2 style="margin:0 0 10px;font-size:22px;">¿Qué es factorizar?</h2>
+      <p class="context-text" style="margin-bottom:6px;">Factorizar una expresión algebraica es reescribirla como un <b>producto de factores</b>. Es el proceso inverso a la multiplicación: si sabemos que 2 × 30 = 60, entonces factorizar 60 es encontrar 2 y 30 como sus componentes. En ingeniería, esta lógica se usa para descomponer costos, áreas, cargas o riesgos en sus componentes más simples y manejables.</p>
+      <span class="audio-pair"><button class="btn-audio" id="audioIntro">🔊 Escuchar (ES)</button><button class="btn-audio alt" id="audioIntroEN">🔊 Listen (EN)</button></span>
+
+      <div class="chain" id="factorTree"></div>
+
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn-primary" id="toExercises">Iniciar los 15 ejercicios →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA 2: EJERCICIO (plantilla reutilizable) ============ -->
+  <section id="screen-exercise" class="screen">
+    <div class="panel">
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="sheet-tag" id="exTag">EJERCICIO 1 DE 15 · FACTOR COMÚN</div>
+      <p class="context-text" id="exContext"></p>
+
+      <div class="statement-box">
+        <span id="exStatement"></span>
+        <span class="audio-pair"><button class="btn-audio" id="audioStatement">🔊 Pregunta (ES)</button><button class="btn-audio alt" id="audioStatementEN">🔊 Question (EN)</button></span>
+      </div>
+
+      <div class="crate-pair scene3d" id="exCrates"></div>
+
+      <label for="answerInput">Tu respuesta factorizada</label>
+
+      <div class="exp-toolbar">
+        <span class="exp-label">Insertar potencia:</span>
+        <button type="button" class="btn-chip" data-insert="^">^</button>
+        <button type="button" class="btn-chip" data-insert="^2">x²  (x al cuadrado)</button>
+        <button type="button" class="btn-chip" data-insert="^3">x³  (x al cubo)</button>
+      </div>
+
+      <input type="text" id="answerInput" placeholder="Ej: (x+2)(x-2)  ·  usa ^ para potencias, ej: x^2" autocomplete="off">
+      <p class="input-hint">Tip: escribe <span class="mono">^</span> para indicar un exponente. Por ejemplo, <span class="mono">x^2</span> se lee "x elevado a la 2" y también puedes usar los botones de arriba.</p>
+
+      <div class="row">
+        <button class="btn-primary" id="checkBtn">Comprobar respuesta</button>
+        <span class="audio-pair"><button class="btn-audio" id="audioMyAnswer">🔊 Mi respuesta (ES)</button><button class="btn-audio alt" id="audioMyAnswerEN">🔊 My answer (EN)</button></span>
+      </div>
+
+      <div class="row" id="postCheckAudios" style="display:none;">
+        <span class="audio-pair"><button class="btn-audio" id="audioExplain">🔊 Explicación (ES)</button><button class="btn-audio alt" id="audioExplainEN">🔊 Explanation (EN)</button></span>
+        <span class="audio-pair"><button class="btn-audio" id="audioCorrect">🔊 Respuesta correcta (ES)</button><button class="btn-audio alt" id="audioCorrectEN">🔊 Correct answer (EN)</button></span>
+      </div>
+
+      <div class="feedback" id="feedbackBox"></div>
+      <div class="explanation" id="explanationBox"></div>
+
+      <div class="row" style="justify-content:flex-end;">
+        <button class="btn-primary" id="nextBtn" style="display:none;">Siguiente ejercicio →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PANTALLA 3: RESUMEN + PDF ============ -->
+  <section id="screen-summary" class="screen">
+    <div class="panel">
+      <div class="sheet-tag">CIERRE DE ACTIVIDAD</div>
+      <div class="score-hero">
+        <div class="num" id="scoreNum">0/15</div>
+        <div class="lbl">ejercicios correctos</div>
+      </div>
+      <p class="input-hint" id="autoMsg" style="text-align:center;"></p>
+      <div id="summaryList"></div>
+      <div class="row" style="justify-content:center;margin-top:24px;">
+        <button class="btn-primary" id="pdfBtn">📄 Descargar PDF</button>
+        <button class="btn-primary" id="htmlBtn">🌐 Descargar HTML</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="titleblock">
+  <div class="cell">ESTUDIANTE<b id="tbName">—</b></div>
+  <div class="cell">DOCENTE<b>Nicolas Bilbao</b></div>
+  <div class="cell">MATERIA<b>Competencias Matemáticas</b></div>
+  <div class="cell">SEMANA<b>5</b></div>
+  <div class="cell">PROGRAMA<b>Ing. SST</b></div>
+  <div class="cell">FECHA<b id="tbDate">—</b></div>
+</div>
+
+<script>
+/* ---------------------------------------------------------
+   DATOS DE LOS EJERCICIOS
+--------------------------------------------------------- */
+const exercises = [
+  {
+    tag: "FACTOR COMÚN (MONOMIO)",
+    context: "En una planta industrial, el área destinada a señalización de emergencia en cada nivel se modela con la expresión 6x + 12 (en metros cuadrados), donde x representa el número de pasillos. Factoriza la expresión para hallar el módulo estándar que se repite.",
+    statement: "6x + 12",
+    accepted: ["6(x+2)"],
+    display: "6(x + 2)",
+    explanation: "El factor común de 6x y 12 es 6, porque ambos términos son múltiplos de 6. Al dividir cada término entre 6 obtenemos x y 2. Por lo tanto: 6x + 12 = 6 por el paréntesis x más 2.",
+    crateLeft: "6", crateRight: "(x+2)"
+  },
+  {
+    tag: "FACTOR COMÚN CON VARIABLE",
+    context: "El área ocupada por un conjunto de señales de seguridad verticales se modela con 3x² + 6x, donde x es la altura del soporte en metros. Factoriza extrayendo el factor común, incluyendo la variable.",
+    statement: "3x² + 6x",
+    accepted: ["3x(x+2)"],
+    display: "3x(x + 2)",
+    explanation: "El factor común de 3x² y 6x es 3x, pues ambos términos contienen el factor 3 y al menos una x. Dividimos cada término entre 3x: 3x² entre 3x es x, y 6x entre 3x es 2. Entonces 3x² más 6x es igual a 3x por paréntesis x más 2.",
+    crateLeft: "3x", crateRight: "(x+2)"
+  },
+  {
+    tag: "FACTOR COMÚN POR AGRUPACIÓN",
+    context: "En una auditoría de riesgos laborales, los factores evaluados se agrupan en la expresión ax + ay + bx + by, donde a y b son tipos de riesgo, y x, y son áreas de la planta. Factoriza por agrupación.",
+    statement: "ax + ay + bx + by",
+    accepted: ["(a+b)(x+y)", "(x+y)(a+b)"],
+    display: "(a + b)(x + y)",
+    explanation: "Agrupamos los dos primeros y los dos últimos términos: a por x más a por y, más b por x más b por y, es igual a a por paréntesis x más y, más b por paréntesis x más y. Como el paréntesis x más y es común, factorizamos: paréntesis a más b, por paréntesis x más y.",
+    crateLeft: "(a+b)", crateRight: "(x+y)"
+  },
+  {
+    tag: "AGRUPACIÓN (4 TÉRMINOS)",
+    context: "El registro de incidentes de una empresa combina la frecuencia y la severidad de eventos en la expresión x³ + x² + x + 1, donde x representa el número de turnos evaluados. Factoriza agrupando términos.",
+    statement: "x³ + x² + x + 1",
+    accepted: ["(x+1)(x^2+1)", "(x^2+1)(x+1)"],
+    display: "(x + 1)(x² + 1)",
+    explanation: "Agrupamos los dos primeros y los dos últimos términos: paréntesis x³ más x², más paréntesis x más 1, es igual a x² por paréntesis x más 1, más 1 por paréntesis x más 1. Como el paréntesis x más 1 es común, factorizamos: paréntesis x más 1, por paréntesis x² más 1.",
+    crateLeft: "(x+1)", crateRight: "(x^2+1)"
+  },
+  {
+    tag: "DIFERENCIA DE CUADRADOS",
+    context: "Una zona de seguridad restringida tiene forma cuadrada. Al descontar una franja de acceso, su área remanente queda expresada como x² − 25 metros cuadrados. Factoriza para conocer las dimensiones de esa área.",
+    statement: "x² − 25",
+    accepted: ["(x+5)(x-5)", "(x-5)(x+5)"],
+    display: "(x + 5)(x − 5)",
+    explanation: "Es una diferencia de cuadrados: x² menos 25 es igual a x² menos 5². Se factoriza como el producto de la suma por la diferencia de las raíces: paréntesis x más 5, por paréntesis x menos 5.",
+    crateLeft: "(x+5)", crateRight: "(x-5)"
+  },
+  {
+    tag: "DIFERENCIA DE CUADRADOS (CON COEFICIENTES)",
+    context: "El área disponible tras instalar una barrera de contención perimetral se reduce a 4x² − 9 metros cuadrados. Factoriza para hallar las dimensiones resultantes.",
+    statement: "4x² − 9",
+    accepted: ["(2x+3)(2x-3)", "(2x-3)(2x+3)"],
+    display: "(2x + 3)(2x − 3)",
+    explanation: "Es una diferencia de cuadrados: 4x² es igual a paréntesis 2x al cuadrado, y 9 es igual a 3 al cuadrado. Se factoriza como el producto de la suma por la diferencia de las raíces: paréntesis 2x más 3, por paréntesis 2x menos 3.",
+    crateLeft: "(2x+3)", crateRight: "(2x-3)"
+  },
+  {
+    tag: "TRINOMIO CUADRADO PERFECTO (SUMA)",
+    context: "El área de una plataforma de trabajo cuadrada, usada para labores en altura, se representa mediante x² + 10x + 25. Factoriza la expresión para determinar la medida del lado de la plataforma.",
+    statement: "x² + 10x + 25",
+    accepted: ["(x+5)^2", "(x+5)(x+5)"],
+    display: "(x + 5)²",
+    explanation: "Es un trinomio cuadrado perfecto: el primer y el último término son cuadrados perfectos, x² y 5², y el término central es el doble producto de sus raíces, 2 por x por 5 igual a 10x. Se factoriza como paréntesis x más 5, al cuadrado.",
+    crateLeft: "(x+5)", crateRight: "(x+5)"
+  },
+  {
+    tag: "TRINOMIO CUADRADO PERFECTO (RESTA)",
+    context: "La resistencia estructural de un elemento de protección disminuye según la expresión x² − 8x + 16. Factoriza para identificar el valor crítico de x.",
+    statement: "x² − 8x + 16",
+    accepted: ["(x-4)^2", "(x-4)(x-4)"],
+    display: "(x − 4)²",
+    explanation: "Es un trinomio cuadrado perfecto: x² y 4² son cuadrados perfectos, y el término central es el doble producto de sus raíces con signo negativo: 2 por x por 4 igual a 8x. Se factoriza como paréntesis x menos 4, al cuadrado.",
+    crateLeft: "(x-4)", crateRight: "(x-4)"
+  },
+  {
+    tag: "TRINOMIO x² + bx + c",
+    context: "El número de elementos de protección personal requeridos para conformar una brigada de emergencia se modela con x² + 7x + 12. Factoriza para hallar los dos subgrupos que conforman la brigada.",
+    statement: "x² + 7x + 12",
+    accepted: ["(x+3)(x+4)", "(x+4)(x+3)"],
+    display: "(x + 3)(x + 4)",
+    explanation: "Buscamos dos números que multiplicados den 12 y sumados den 7: esos números son 3 y 4. Entonces x² más 7x más 12 es igual a paréntesis x más 3, por paréntesis x más 4.",
+    crateLeft: "(x+3)", crateRight: "(x+4)"
+  },
+  {
+    tag: "TRINOMIO x² + bx + c (NEGATIVO)",
+    context: "La diferencia entre el número de capacitaciones programadas y las realizadas durante un año se modela con x² − x − 12. Factoriza para hallar los dos valores relacionados.",
+    statement: "x² − x − 12",
+    accepted: ["(x-4)(x+3)", "(x+3)(x-4)"],
+    display: "(x − 4)(x + 3)",
+    explanation: "Buscamos dos números que multiplicados den −12 y sumados den −1: esos números son −4 y 3. Entonces x² menos x menos 12 es igual a paréntesis x menos 4, por paréntesis x más 3.",
+    crateLeft: "(x-4)", crateRight: "(x+3)"
+  },
+  {
+    tag: "TRINOMIO ax² + bx + c",
+    context: "El costo total de implementación de un sistema de alarmas contra incendios, en miles de pesos, se modela con 2x² + 5x + 3. Factoriza la expresión para descomponer el costo en dos componentes.",
+    statement: "2x² + 5x + 3",
+    accepted: ["(2x+3)(x+1)", "(x+1)(2x+3)"],
+    display: "(2x + 3)(x + 1)",
+    explanation: "Multiplicamos a por c: 2 por 3 es igual a 6. Buscamos dos números que multiplicados den 6 y sumados den 5: 2 y 3. Reescribimos: 2x² más 2x más 3x más 3, agrupamos: 2x por paréntesis x más 1, más 3 por paréntesis x más 1, y obtenemos paréntesis 2x más 3, por paréntesis x más 1.",
+    crateLeft: "(2x+3)", crateRight: "(x+1)"
+  },
+  {
+    tag: "TRINOMIO ax² + bx + c (CASO 2)",
+    context: "El presupuesto para reforzar la estructura de una escalera de emergencia se representa mediante 3x² − 10x + 8, en millones de pesos. Factoriza para descomponer el presupuesto en dos partidas.",
+    statement: "3x² − 10x + 8",
+    accepted: ["(3x-4)(x-2)", "(x-2)(3x-4)"],
+    display: "(3x − 4)(x − 2)",
+    explanation: "Multiplicamos a por c: 3 por 8 es igual a 24. Buscamos dos números que multiplicados den 24 y sumados den −10: −4 y −6. Reescribimos: 3x² menos 4x menos 6x más 8, agrupamos: x por paréntesis 3x menos 4, menos 2 por paréntesis 3x menos 4, y obtenemos paréntesis 3x menos 4, por paréntesis x menos 2.",
+    crateLeft: "(3x-4)", crateRight: "(x-2)"
+  },
+  {
+    tag: "SUMA DE CUBOS",
+    context: "El volumen de un contenedor cúbico para residuos peligrosos, más un módulo adicional, se expresa como x³ + 27. Factoriza usando la regla de suma de cubos.",
+    statement: "x³ + 27",
+    accepted: ["(x+3)(x^2-3x+9)", "(x^2-3x+9)(x+3)"],
+    display: "(x + 3)(x² − 3x + 9)",
+    explanation: "Es una suma de cubos: x³ más 27 es igual a x³ más 3 al cubo. Se factoriza como paréntesis a más b, por paréntesis a al cuadrado menos a por b más b al cuadrado, con a igual a x y b igual a 3: paréntesis x más 3, por paréntesis x al cuadrado menos 3x más 9.",
+    crateLeft: "(x+3)", crateRight: "(x^2-3x+9)"
+  },
+  {
+    tag: "DIFERENCIA DE CUBOS",
+    context: "El volumen restante de un tanque de almacenamiento tras una fuga controlada se modela con x³ − 8. Factoriza usando la regla de diferencia de cubos.",
+    statement: "x³ − 8",
+    accepted: ["(x-2)(x^2+2x+4)", "(x^2+2x+4)(x-2)"],
+    display: "(x − 2)(x² + 2x + 4)",
+    explanation: "Es una diferencia de cubos: x³ menos 8 es igual a x³ menos 2 al cubo. Se factoriza como paréntesis a menos b, por paréntesis a al cuadrado más a por b más b al cuadrado, con a igual a x y b igual a 2: paréntesis x menos 2, por paréntesis x al cuadrado más 2x más 4.",
+    crateLeft: "(x-2)", crateRight: "(x^2+2x+4)"
+  },
+  {
+    tag: "FACTORIZACIÓN COMBINADA",
+    context: "El área neta de una zona de evacuación, tras aplicar dos reducciones simultáneas de diseño, se modela con 2x² − 8. Factoriza completamente la expresión, extrayendo primero el factor común.",
+    statement: "2x² − 8",
+    accepted: ["2(x+2)(x-2)", "2(x-2)(x+2)"],
+    display: "2(x + 2)(x − 2)",
+    explanation: "Primero extraemos el factor común 2: 2x² menos 8 es igual a 2 por paréntesis x al cuadrado menos 4. Luego factorizamos la diferencia de cuadrados: x al cuadrado menos 4 es igual a paréntesis x más 2, por paréntesis x menos 2. Resultado final: 2 por paréntesis x más 2, por paréntesis x menos 2.",
+    crateLeft: "2", crateRight: "(x+2)(x-2)"
+  }
+];
+
+
+const EN = [
+ {c:"In an industrial plant, the emergency signage area on each level is modeled by 6x + 12 square meters, where x is the number of hallways. Factor the expression to find the standard module that repeats.", e:"The greatest common factor of 6x and 12 is 6. Dividing each term by 6 gives x and 2. So 6x + 12 equals 6 times the quantity x plus 2."},
+ {c:"The area covered by a set of vertical safety signs is modeled by 3x² + 6x, where x is the support height in meters. Factor out the common factor, including the variable.", e:"The common factor of 3x² and 6x is 3x. Dividing each term by 3x gives x and 2. So the result is 3x times the quantity x plus 2."},
+ {c:"In a workplace risk audit, the evaluated factors are grouped in ax + ay + bx + by, where a and b are risk types and x, y are plant areas. Factor by grouping.", e:"Group the first two and the last two terms: a times the quantity x plus y, plus b times the quantity x plus y. Since x plus y is common, the result is the quantity a plus b times the quantity x plus y."},
+ {c:"A company's incident log combines frequency and severity in x³ + x² + x + 1, where x is the number of shifts evaluated. Factor by grouping.", e:"Group the terms: x² times the quantity x plus 1, plus 1 times the quantity x plus 1. Since x plus 1 is common, the result is the quantity x plus 1 times the quantity x² plus 1."},
+ {c:"A restricted safety zone is square. After removing an access strip, its remaining area is x² − 25 square meters. Factor to find the dimensions.", e:"This is a difference of squares: x² minus 5². It factors as the sum times the difference of the roots: the quantity x plus 5 times the quantity x minus 5."},
+ {c:"After installing a perimeter containment barrier, the available area drops to 4x² − 9 square meters. Factor to find the resulting dimensions.", e:"Difference of squares: 4x² is the quantity 2x squared, and 9 is 3 squared. The result is the quantity 2x plus 3 times the quantity 2x minus 3."},
+ {c:"The area of a square work platform used for work at height is x² + 10x + 25. Factor to find the side length.", e:"Perfect square trinomial: x² and 5² are perfect squares, and the middle term 10x is twice x times 5. It factors as the quantity x plus 5, squared."},
+ {c:"The structural strength of a protective element decreases according to x² − 8x + 16. Factor to identify the critical value of x.", e:"Perfect square trinomial: x² and 4² are perfect squares, and the middle term is minus twice x times 4. It factors as the quantity x minus 4, squared."},
+ {c:"The number of protective equipment items needed for an emergency brigade is x² + 7x + 12. Factor to find the two subgroups.", e:"Find two numbers that multiply to 12 and add to 7: 3 and 4. So the result is the quantity x plus 3 times the quantity x plus 4."},
+ {c:"The difference between scheduled and completed trainings in a year is x² − x − 12. Factor to find the two related values.", e:"Find two numbers that multiply to minus 12 and add to minus 1: minus 4 and 3. So the result is the quantity x minus 4 times the quantity x plus 3."},
+ {c:"The total cost of a fire alarm system, in thousands of pesos, is 2x² + 5x + 3. Factor to split the cost into two components.", e:"Multiply a by c: 2 times 3 is 6. Find two numbers that multiply to 6 and add to 5: 2 and 3. Rewrite as 2x² + 2x + 3x + 3 and group: 2x times the quantity x plus 1, plus 3 times the quantity x plus 1. The result is the quantity 2x plus 3 times the quantity x plus 1."},
+ {c:"The budget to reinforce an emergency staircase is 3x² − 10x + 8, in millions of pesos. Factor to split it into two items.", e:"Multiply a by c: 3 times 8 is 24. Find two numbers that multiply to 24 and add to minus 10: minus 4 and minus 6. Rewrite as 3x² − 4x − 6x + 8 and group: x times the quantity 3x minus 4, minus 2 times the quantity 3x minus 4. The result is the quantity 3x minus 4 times the quantity x minus 2."},
+ {c:"The volume of a cubic hazardous-waste container plus an extra module is x³ + 27. Factor using the sum of cubes rule.", e:"Sum of cubes: x³ plus 3³. It factors as the quantity a plus b times the quantity a² minus ab plus b², with a equal to x and b equal to 3: the quantity x plus 3 times the quantity x² minus 3x plus 9."},
+ {c:"The remaining volume of a storage tank after a controlled leak is x³ − 8. Factor using the difference of cubes rule.", e:"Difference of cubes: x³ minus 2³. It factors as the quantity a minus b times the quantity a² plus ab plus b², with a equal to x and b equal to 2: the quantity x minus 2 times the quantity x² + 2x + 4."},
+ {c:"The net area of an evacuation zone after two simultaneous design reductions is 2x² − 8. Factor completely, taking out the common factor first.", e:"First take out the common factor 2: 2 times the quantity x² minus 4. Then factor the difference of squares: the quantity x plus 2 times the quantity x minus 2. Final result: 2 times the quantity x plus 2 times the quantity x minus 2."}
+];
+const INTRO_ES='Factorizar una expresión algebraica es reescribirla como un producto de factores. Es el proceso inverso a la multiplicación. En ingeniería, esta lógica se usa para descomponer costos, áreas, cargas o riesgos en sus componentes más simples.';
+const INTRO_EN='Factoring an algebraic expression means rewriting it as a product of factors. It is the inverse of multiplication. In engineering, this logic is used to break down costs, areas, loads or risks into simpler components.';
+
+const state = { name: "", idx: 0, results: [] };
+let lastGreeted='';
+
+/* ---------------------------------------------------------
+   AUDIO (Web Speech API — sin archivos externos)
+--------------------------------------------------------- */
+function loadVoices(){ VOICES = ('speechSynthesis' in window) ? window.speechSynthesis.getVoices() : []; }
+let VOICES = []; loadVoices();
+function pickVoice(l){
+  const full = l.toLowerCase(), p = full.slice(0,2);
+  return VOICES.find(v => v.lang && v.lang.toLowerCase().replace('_','-') === full) ||
+         VOICES.find(v => v.lang && v.lang.toLowerCase().startsWith(p));
+}
+/* items: [[texto, 'es-ES' | 'en-US'], ...] — se leen en orden */
+function speakSeq(items){
+  if(!('speechSynthesis' in window)){ alert('Este navegador no soporta audio por voz. Prueba con Chrome o Edge.'); return; }
+  window.speechSynthesis.cancel();
+  items.forEach(([t,l]) => {
+    (t.match(/[^.!?:]+[.!?:]?/g) || [t]).forEach(chunk => {
+      if(!chunk.trim()) return;
+      const u = new SpeechSynthesisUtterance(chunk.trim());
+      u.lang = l; u.rate = 0.95;
+      const v = pickVoice(l); if(v) u.voice = v;
+      window.speechSynthesis.speak(u);
+    });
+  });
+}
+function speak(text, lang){ speakSeq([[text, lang || 'es-ES']]); }
+
+const LX = {
+  es:{sq:' al cuadrado ',cu:' al cubo ',pw:' elevado a la ',pw2:' elevado a ',op:' abre paréntesis ',cl:' cierra paréntesis ',pl:' más ',mi:' menos ',ti:' por ',eq:' igual a '},
+  en:{sq:' squared ',cu:' cubed ',pw:' to the power of ',pw2:' to the power of ',op:' open parenthesis ',cl:' close parenthesis ',pl:' plus ',mi:' minus ',ti:' times ',eq:' equals '}
+};
+/* Convierte símbolos matemáticos en palabras para que el audio los lea bien.
+   math=true: también lee paréntesis y guiones (respuestas del estudiante). */
+function toSpeech(raw, lang, math){
+  const d = LX[lang];
+  let s = (raw||'').replace(/²/g,'^2').replace(/³/g,'^3').replace(/\*\*/g,'^').replace(/−/g,d.mi);
+  s = s.replace(/\^2(?!\d)/g,d.sq).replace(/\^3(?!\d)/g,d.cu).replace(/\^(\d+)/g,d.pw+'$1').replace(/\^/g,d.pw2);
+  s = s.replace(/\+/g,d.pl).replace(/[×*]/g,d.ti).replace(/=/g,d.eq);
+  if(math) s = s.replace(/-/g,d.mi).replace(/\(/g,d.op).replace(/\)/g,d.cl);
+  return s.replace(/\s+/g,' ').trim();
+}
+function greet(name){
+  if(!name || name === lastGreeted) return;
+  lastGreeted = name;
+  const g = document.getElementById('greetBox');
+  g.textContent = `Bienvenido Ingeniero ${name} · Welcome, Engineer ${name}`;
+  g.classList.add('show');
+  speakSeq([[`Bienvenido Ingeniero ${name}`,'es-ES'],[`Welcome, Engineer ${name}`,'en-US']]);
+}
+function esc(t){ return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* Inserta texto en la posición del cursor de un input (para el teclado de potencias) */
+function insertAtCursor(input, text){
+  const start = input.selectionStart != null ? input.selectionStart : input.value.length;
+  const end = input.selectionEnd != null ? input.selectionEnd : input.value.length;
+  const val = input.value;
+  input.value = val.slice(0, start) + text + val.slice(end);
+  const pos = start + text.length;
+  input.focus();
+  input.setSelectionRange(pos, pos);
+}
+
+/* ---------------------------------------------------------
+   FIGURAS 3D (cajones CSS / crates)
+--------------------------------------------------------- */
+function crateHTML(label, opts){
+  opts = opts || {};
+  const cls = ['crate3d'];
+  if(opts.small) cls.push('small');
+  if(opts.result) cls.push('result');
+  if(opts.revealed) cls.push('revealed');
+  const caption = opts.caption ? `<div class="step-label">${opts.caption}</div>` : '';
+  return `
+    <div style="text-align:center;">
+      <div class="${cls.join(' ')}">
+        <div class="f f-front">${label}</div>
+        <div class="f f-back"></div>
+        <div class="f f-right"></div>
+        <div class="f f-left"></div>
+        <div class="f f-top"></div>
+        <div class="f f-bottom"></div>
+      </div>
+      ${caption}
+    </div>`;
+}
+
+/* IMPORTANTE: antes de comprobar la respuesta, los cubos NUNCA muestran los
+   factores reales (se ven como cajas cerradas con "?"). Solo se revelan
+   los factores una vez que el estudiante ya respondió el ejercicio. */
+function renderExerciseCrates(ex, revealed){
+  const wrap = document.getElementById('exCrates');
+  wrap.innerHTML =
+    crateHTML(revealed ? ex.crateLeft : '?', {result: !revealed, caption:'Factor 1'}) +
+    `<span class="op">×</span>` +
+    crateHTML(revealed ? ex.crateRight : '?', {result: !revealed, caption:'Factor 2'}) +
+    `<span class="op">=</span>` +
+    crateHTML(revealed ? '✓' : '?', {result:true, revealed:revealed, caption: revealed ? 'Verificado' : 'Expresión dada'});
+}
+
+function renderFactorTree(){
+  const el = document.getElementById('factorTree');
+  el.innerHTML = `
+    <div>${crateHTML('60', {small:true})}<div class="step-label">expresión original</div></div>
+    <span class="op">=</span>
+    <div>${crateHTML('2', {small:true})}<div class="step-label">factor</div></div>
+    <span class="op">×</span>
+    <div>${crateHTML('30', {small:true})}<div class="step-label">factor</div></div>
+    <span class="op">=</span>
+    <div>${crateHTML('2', {small:true})}</div>
+    <span class="op">×</span>
+    <div>${crateHTML('2', {small:true})}</div>
+    <span class="op">×</span>
+    <div>${crateHTML('15', {small:true})}</div>
+    <span class="op">=</span>
+    <div>${crateHTML('2', {small:true, result:true, revealed:true})}</div>
+    <span class="op">×</span>
+    <div>${crateHTML('2', {small:true, result:true, revealed:true})}</div>
+    <span class="op">×</span>
+    <div>${crateHTML('3', {small:true, result:true, revealed:true})}</div>
+    <span class="op">×</span>
+    <div>${crateHTML('5', {small:true, result:true, revealed:true})}<div class="step-label">factores primos</div></div>
+  `;
+}
+
+/* ---------------------------------------------------------
+   NAVEGACIÓN DE PANTALLAS
+--------------------------------------------------------- */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function updateBadge(){
+  const n = Math.min(state.idx, exercises.length);
+  document.getElementById('statusBadge').textContent =
+    state.idx >= exercises.length ? 'RESULTADOS' : `LÁMINA ${String(n+1).padStart(2,'0')}/${String(exercises.length).padStart(2,'0')}`;
+}
+
+/* ---------------------------------------------------------
+   VALIDACIÓN DE RESPUESTAS
+--------------------------------------------------------- */
+function normalize(s){
+  return s.toLowerCase()
+    .replace(/\s+/g,'')
+    .replace(/−/g,'-')
+    .replace(/\*\*/g,'^')
+    .replace(/[×∗]/g,'*')
+    .replace(/\*/g,'')
+    .replace(/²/g,'^2')
+    .replace(/³/g,'^3');
+}
+
+function canon(s){
+  const n = normalize(s).replace(/(\([^()]*\))\^2/g,'$1$1');
+  return (n.match(/\([^()]*\)|[^()]+/g) || []).sort().join('|');
+}
+
+function checkAnswer(){
+  const ex = exercises[state.idx];
+  const raw = document.getElementById('answerInput').value.trim();
+  if(!raw) return;
+  const norm = normalize(raw);
+  const correct = ex.accepted.some(a => canon(a) === canon(raw));
+
+  const fb = document.getElementById('feedbackBox');
+  fb.className = 'feedback show ' + (correct ? 'ok' : 'bad');
+  fb.textContent = correct
+    ? '✓ ¡Correcto! Factorizaste la expresión de forma adecuada.'
+    : `✗ No es correcto todavía. La forma esperada es: ${ex.display}. Revisa la explicación abajo.`;
+
+  const exp = document.getElementById('explanationBox');
+  exp.className = 'explanation show';
+  exp.innerHTML = `<b>Explicación:</b> ${ex.explanation}<br><br><i><b>Explanation:</b> ${EN[state.idx].e}</i>`;
+
+  document.getElementById('postCheckAudios').style.display = 'flex';
+  document.getElementById('nextBtn').style.display = 'inline-block';
+  document.getElementById('checkBtn').disabled = true;
+  document.getElementById('answerInput').disabled = true;
+
+  renderExerciseCrates(ex, true);
+
+  state.results.push({
+    tag: ex.tag,
+    statement: ex.statement,
+    studentAnswer: raw,
+    correctAnswer: ex.display,
+    correct: correct,
+    context: ex.context,
+    explanation: ex.explanation,
+    enExplanation: EN[state.idx].e
+  });
+}
+
+/* ---------------------------------------------------------
+   RENDER DE CADA EJERCICIO
+--------------------------------------------------------- */
+function renderExercise(){
+  const ex = exercises[state.idx];
+  document.getElementById('exTag').textContent = `EJERCICIO ${state.idx+1} DE ${exercises.length} · ${ex.tag}`;
+  document.getElementById('exContext').textContent = ex.context;
+  document.getElementById('exStatement').textContent = ex.statement;
+  document.getElementById('answerInput').value = '';
+  document.getElementById('answerInput').disabled = false;
+  document.getElementById('checkBtn').disabled = false;
+  document.getElementById('feedbackBox').className = 'feedback';
+  document.getElementById('explanationBox').className = 'explanation';
+  document.getElementById('postCheckAudios').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('progressFill').style.width = `${(state.idx/exercises.length)*100}%`;
+  renderExerciseCrates(ex, false);
+  updateBadge();
+
+  const en = EN[state.idx];
+  const $ = id => document.getElementById(id);
+  $('audioStatement').onclick   = () => speak(`${toSpeech(ex.context,'es')} Enunciado: ${toSpeech(ex.statement,'es',true)}`,'es-ES');
+  $('audioStatementEN').onclick = () => speak(`${toSpeech(en.c,'en')} Statement: ${toSpeech(ex.statement,'en',true)}`,'en-US');
+  $('audioExplain').onclick     = () => speak(toSpeech(ex.explanation,'es'),'es-ES');
+  $('audioExplainEN').onclick   = () => speak(toSpeech(en.e,'en'),'en-US');
+  $('audioCorrect').onclick     = () => speak(`La respuesta correcta es: ${toSpeech(ex.display,'es',true)}`,'es-ES');
+  $('audioCorrectEN').onclick   = () => speak(`The correct answer is: ${toSpeech(ex.display,'en',true)}`,'en-US');
+  $('audioMyAnswer').onclick = () => {
+    const v = $('answerInput').value.trim();
+    speak(v ? `Tu respuesta es: ${toSpeech(v,'es',true)}` : 'Todavía no has escrito ninguna respuesta.','es-ES');
+  };
+  $('audioMyAnswerEN').onclick = () => {
+    const v = $('answerInput').value.trim();
+    speak(v ? `Your answer is: ${toSpeech(v,'en',true)}` : 'You have not written an answer yet.','en-US');
+  };
+
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ---------------------------------------------------------
+   RESUMEN FINAL
+--------------------------------------------------------- */
+function renderSummary(){
+  const list = document.getElementById('summaryList');
+  const correctCount = state.results.filter(r => r.correct).length;
+  document.getElementById('scoreNum').textContent = `${correctCount}/${exercises.length}`;
+  list.innerHTML = state.results.map((r,i) => `
+    <div class="summary-item">
+      <div class="summary-head">
+        <span>${i+1}. ${r.tag} — ${r.statement}</span>
+        <span class="mark ${r.correct ? 'ok' : 'bad'}">${r.correct ? 'CORRECTO' : 'REVISAR'}</span>
+      </div>
+      <div style="font-size:12.5px;color:var(--muted);margin-top:6px;">
+        Tu respuesta: <span class="mono">${esc(r.studentAnswer)}</span> &nbsp;·&nbsp;
+        Esperada: <span class="mono">${r.correctAnswer}</span>
+      </div>
+    </div>
+  `).join('');
+  updateBadge();
+}
+
+/* ---------------------------------------------------------
+   GENERACIÓN DE PDF
+--------------------------------------------------------- */
+function pdfSafe(t){ return String(t).replace(/−/g,'-').replace(/[✓✗]/g,''); }
+function downloadBlob(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function safeName(){ return (state.name || 'estudiante').trim().replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ ]/g,'').replace(/\s+/g,'_'); }
+const COVER = [['DOCENTE','NICOLAS BILBAO'],['MATERIA','COMPETENCIAS MATEMÁTICAS'],['SEMANA','5'],['PROGRAMA','INGENIERÍA EN SEGURIDAD Y SALUD EN EL TRABAJO']];
+function dateStr(){ return new Date().toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'}); }
+
+function generatePDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const mx = 48, W = 499; let y = 56;
+  const write = (t, o={}) => {
+    doc.setFont('helvetica', o.b ? 'bold' : (o.i ? 'italic' : 'normal'));
+    doc.setFontSize(o.s || 10.5);
+    doc.setTextColor(...(o.c || [30,30,30]));
+    doc.splitTextToSize(pdfSafe(t), W - (o.ind||0)).forEach(l => {
+      if(y > 790){ doc.addPage(); y = 56; }
+      doc.text(l, mx + (o.ind||0), y); y += (o.lh || 14);
+    });
+  };
+  const correctCount = state.results.filter(r => r.correct).length;
+
+  // Portada
+  doc.setFillColor(11,35,64); doc.rect(0,0,595,842,'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(26); doc.setTextColor(255,199,44);
+  doc.text('UNIVERSIDAD AMERICANA', mx, 150);
+  doc.setFontSize(15); doc.setTextColor(237,241,230);
+  doc.text('Factorización aplicada', mx, 185);
+  let cy = 250;
+  COVER.forEach(([k,v]) => {
+    doc.setFontSize(10); doc.setTextColor(142,203,255); doc.text(k, mx, cy);
+    doc.setFontSize(13); doc.setTextColor(237,241,230);
+    doc.splitTextToSize(v, W).forEach((l,i) => doc.text(l, mx, cy + 16 + i*16));
+    cy += 62;
+  });
+  doc.setDrawColor(255,199,44); doc.line(mx, cy, mx+W, cy); cy += 30;
+  doc.setFontSize(10); doc.setTextColor(142,203,255); doc.text('ESTUDIANTE', mx, cy);
+  doc.setFontSize(14); doc.setTextColor(255,255,255); doc.text(pdfSafe(state.name), mx, cy+18);
+  doc.setFontSize(11); doc.text(`Fecha: ${dateStr()}`, mx, cy+42);
+  doc.text(`Puntaje: ${correctCount} de ${exercises.length} ejercicios correctos`, mx, cy+60);
+
+  // Preguntas y respuestas
+  doc.addPage(); y = 56;
+  state.results.forEach((r,i) => {
+    if(y > 640){ doc.addPage(); y = 56; }
+    write(`${i+1}. ${r.tag}`, {b:true, s:12, lh:17});
+    write(r.context, {ind:8});
+    write(`Expresión: ${r.statement}`, {b:true, ind:8});
+    write(`Respuesta del estudiante: ${r.studentAnswer}`, {ind:8});
+    write(`Respuesta correcta: ${r.correctAnswer}`, {ind:8});
+    write(r.correct ? 'Resultado: CORRECTO' : 'Resultado: PARA REVISAR', {b:true, ind:8, c: r.correct ? [30,130,80] : [200,60,40]});
+    write(`Explicación: ${r.explanation}`, {ind:8, c:[70,70,70], s:9.5});
+    write(`Explanation: ${r.enExplanation}`, {ind:8, i:true, c:[70,70,70], s:9.5});
+    y += 14;
+  });
+  doc.save(`Factorizacion_${safeName()}.pdf`);
+}
+
+function generateHTML(){
+  const correctCount = state.results.filter(r => r.correct).length;
+  const items = state.results.map((r,i) => `
+  <section class="q ${r.correct?'ok':'bad'}">
+    <h3>${i+1}. ${esc(r.tag)}</h3>
+    <p>${esc(r.context)}</p>
+    <p class="expr">Expresión: ${esc(r.statement)}</p>
+    <p>Respuesta del estudiante: <code>${esc(r.studentAnswer)}</code></p>
+    <p>Respuesta correcta: <code>${esc(r.correctAnswer)}</code></p>
+    <p class="res">${r.correct ? '✓ CORRECTO' : '✗ PARA REVISAR'}</p>
+    <p class="exp"><b>Explicación:</b> ${esc(r.explanation)}<br><i><b>Explanation:</b> ${esc(r.enExplanation)}</i></p>
+  </section>`).join('');
+  const cover = COVER.map(([k,v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join('');
+  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Resultados · ${esc(state.name)}</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:860px;margin:0 auto;padding:24px;color:#1b2a3d;background:#f5f7fa}
+header{background:#0b2340;color:#edf1e6;padding:28px;border-radius:6px;margin-bottom:22px}
+header h1{color:#ffc72c;margin:0 0 14px}
+header div{display:inline-block;min-width:210px;margin:6px 18px 6px 0}
+header span{display:block;font-size:11px;color:#8ecbff;letter-spacing:.1em}
+.score{font-size:18px;margin-top:14px}
+.q{background:#fff;border-left:5px solid #5ac98f;padding:12px 18px;margin-bottom:14px;border-radius:3px;break-inside:avoid}
+.q.bad{border-color:#ff6b4a}.q h3{margin:0 0 8px}.expr{font-weight:bold}
+code{background:#eef1f5;padding:2px 6px;border-radius:3px}.res{font-weight:bold}.exp{font-size:13px;color:#445}
+@media print{body{background:#fff}header{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<header><h1>UNIVERSIDAD AMERICANA</h1><p>Factorización aplicada</p>${cover}
+<div class="score"><b>Estudiante:</b> ${esc(state.name)}<br><b>Fecha:</b> ${dateStr()}<br><b>Puntaje:</b> ${correctCount} de ${exercises.length}</div></header>
+${items}</body></html>`;
+  downloadBlob(new Blob([html], {type:'text/html;charset=utf-8'}), `Factorizacion_${safeName()}.html`);
+}
+
+/* ---------------------------------------------------------
+   EVENTOS
+--------------------------------------------------------- */
+document.getElementById('startBtn').addEventListener('click', () => {
+  const nameInput = document.getElementById('studentName');
+  const name = nameInput.value.trim();
+  if(!name){
+    nameInput.style.borderColor = 'var(--red)';
+    nameInput.focus();
+    return;
+  }
+  state.name = name;
+  greet(name);
+  document.getElementById('tbName').textContent = name;
+  document.getElementById('tbDate').textContent = new Date().toLocaleDateString('es-CO');
+  renderFactorTree();
+  showScreen('screen-intro');
+});
+
+document.getElementById('audioIntro').addEventListener('click', () => speak(INTRO_ES,'es-ES'));
+document.getElementById('audioIntroEN').addEventListener('click', () => speak(INTRO_EN,'en-US'));
+
+const nameEl = document.getElementById('studentName');
+nameEl.addEventListener('change', () => { const n = nameEl.value.trim(); if(n.length >= 2) greet(n); });
+nameEl.addEventListener('keydown', e => { if(e.key === 'Enter') document.getElementById('startBtn').click(); });
+
+document.getElementById('toExercises').addEventListener('click', () => {
+  state.idx = 0;
+  showScreen('screen-exercise');
+  renderExercise();
+});
+
+document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+
+document.querySelectorAll('.btn-chip[data-insert]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById('answerInput');
+    if(input.disabled) return;
+    insertAtCursor(input, btn.getAttribute('data-insert'));
+  });
+});
+
+document.getElementById('answerInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter' && !document.getElementById('checkBtn').disabled) checkAnswer();
+});
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  state.idx++;
+  if(state.idx >= exercises.length){
+    showScreen('screen-summary');
+    renderSummary();
+    document.getElementById('autoMsg').textContent = 'Se están generando automáticamente tu PDF y tu HTML con todas las preguntas y respuestas. Si tu navegador los bloquea, usa los botones.';
+    setTimeout(() => { generatePDF(); setTimeout(generateHTML, 900); }, 500);
+  } else {
+    renderExercise();
+  }
+});
+
+document.getElementById('pdfBtn').addEventListener('click', generatePDF);
+document.getElementById('htmlBtn').addEventListener('click', generateHTML);
+
+if('speechSynthesis' in window){
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+</script>
+</body>
+</html>
